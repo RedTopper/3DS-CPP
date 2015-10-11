@@ -32,8 +32,8 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 
-APP_TITLE		:=	Tests functions of IR
-APP_DESCRIPTION	:=
+APP_TITLE		:=	CPP Test
+APP_DESCRIPTION	:=  Tests IR and various HID buttons.
 APP_AUTHOR		:=	RedHat
 ICON			:=	cxi/icon48x48.png
 
