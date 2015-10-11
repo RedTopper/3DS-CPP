@@ -1,0 +1,5 @@
+build
+CPP.pnproj
+CPP.pnps
+CPPTest.elf
+CPPTeststripped.elf
