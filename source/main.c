@@ -9,9 +9,13 @@
 
 static jmp_buf exitJmp;
 u32 *irmemloc;
+//u8 *buf;
+//u32 *transfercount;
 Result Startup;
+Result SetBit;
 Result SetIR;
 int frame = 0; // if the framerate is 60, every time we hit 60, 1 second has passed. 
+
 
 void hang(char *message) {
 	while(aptMainLoop()) {
@@ -33,6 +37,7 @@ void hang(char *message) {
 int main(void) {
 	irmemloc = (u32*) malloc(0x1000);
 	Startup = IRU_Initialize(irmemloc, 0x1000);
+	SetBit = IRU_SetBitRate(0x4);
 	srvInit();        // services
 	aptInit();        // applets
 	hidInit(NULL);    // input
@@ -119,33 +124,54 @@ int main(void) {
 		drawString(10, 40, "CStick (new) x: %04+d, y: %04+d", cStick.dx, cStick.dy );
 		drawString(10, 50, "CPadPr (old) x: NaN , y: NaN", cStick.dx, cStick.dy );
 		drawString(10, 60, "Touch        x: %04d, y: %04d", touch.px, touch.py );
-		drawString(10, 70, "IR Init  Error: %x", Startup);
-		drawString(10, 80, "IR I/O   Error: %x", SetIR);
-		frame++;
+		if(Startup == 0) {
+			drawString(10, 70, "IR started!");
+		} else {
+			drawString(10, 70, "IR Init  Error: %x", Startup);
+		}
+		if(SetIR == 0) {
+			drawString(10, 80, "IR on/off works!");
+		} else {
+			drawString(10, 80, "IR I/O   Error: %x", SetIR);
+		}
+		if(SetBit == 0) {
+			drawString(10, 90, "IR bit rate works!");
+		} else {
+			drawString(10, 90, "IR Bit   Error: %x", SetBit);
+		}
+		
 		if(frame == 60) {
 			frame = 0;
 		}
-		if(frame == 58 || frame == 59) {
+		if(frame == 0) {
 			SetIR = IRU_SetIRLEDState(0x1);
-			drawString(10, 90, "IR state:*");
+			drawString(10, 100, "IR state:*");
 		} else {
 			SetIR = IRU_SetIRLEDState(0x0);
-			drawString(10, 90, "IR state:");
+			drawString(10, 100, "IR state:");
 		}
 		
+		//if(frame != 0 && frame != 1) {
+		//	IRU_RecvData(buf, 0x1000, (u8)0x1, transfercount, 0x0);
+		//}
+		//drawString(10,110,"Buf: %x", &buf);
+		//drawString(10,120,"tra: %x", &transfercount);
+		//drawString(10,130,"mem: %x", &irmemloc);
+		
 		drawString(10, 220, "Start + Select to exit.");
-
 		
 		if((kHeld & KEY_START) && (kHeld & KEY_SELECT)) longjmp(exitJmp, 1);
 		
 		gfxFlushBuffers();
 		gspWaitForVBlank();
 		gfxSwapBuffers();
+		frame++;
 	}
 	
 	exit:
 	
 	IRU_Shutdown();
+	free(irmemloc);
 	gfxExit();
 	hidExit();
 	aptExit();
