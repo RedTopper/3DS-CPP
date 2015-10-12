@@ -1,6 +1,13 @@
 # 3DS-CPP
 A test for the Circle Pad Pro and other 3DS inputs.
 
+###IN ORDER TO USE IR YOU MUST HAVE ONE OF THE FOLLOWING GAMES:
+- Cubic Ninja(US)
+- Ocarina of Time 3D
+- Toki no Ocarina 3D (OoT 3D)
+
+Please make sure you have CPPTest.xml in the same directory as CPPTest.3dsx. In order to select a target, use the D pad (left and right). Report findings at https://gbatemp.net/threads/infra-red-resource-thread.399336/.
+
 ### What is shown on the bottom screen:
 - ABXY URDL SEST LR ZLZR - Buttons on a 3DS. Shows a * when they are pressed.
 - Volume - The volume slider.
