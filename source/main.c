@@ -14,7 +14,8 @@ u32 *irmemloc;
 Result Startup;
 Result SetBit;
 Result SetIR;
-int frame = 0; // if the framerate is 60, every time we hit 60, 1 second has passed. 
+Result GetIR = 0xffffffff; //unknown until known...
+unsigned long frame = 0;
 
 
 void hang(char *message) {
@@ -31,6 +32,31 @@ void hang(char *message) {
 		gfxFlushBuffers();
 		gspWaitForVBlank();
 		gfxSwapBuffers();
+	}
+}
+
+void printMemory(void *ptr, int size, int row) //This is probably very bad but whatever
+{ 
+    unsigned char *c = (unsigned char *)ptr;
+	int i = 0; //goes through all memory
+	int col = 0; //goes through the colums in desp
+	int rowu = 0; //goes through the row in desp
+	int memed = 0; //added to when memory is shown.
+    while(i  != size){
+		int mem = (int)c[i];
+        if(mem != 0) {
+			drawString(10 + (col*18), row + (rowu * 10), "%02x ", mem); 
+			if(col>15) {
+				col = -1;
+				rowu++;
+			}
+			col++;
+			memed++;
+		}
+		i++;
+	}  
+	if(memed == 0) {
+		drawString(10, row, "Nothing to show in memory."); 
 	}
 }
 
@@ -139,24 +165,29 @@ int main(void) {
 		} else {
 			drawString(10, 90, "IR Bit   Error: %x", SetBit);
 		}
-		
-		if(frame == 60) {
-			frame = 0;
-		}
-		if(frame == 0) {
-			SetIR = IRU_SetIRLEDState(0x1);
-			drawString(10, 100, "IR state:*");
+		if(GetIR == 0) {
+			drawString(10, 100, "IR get works :P!");
 		} else {
-			SetIR = IRU_SetIRLEDState(0x0);
-			drawString(10, 100, "IR state:");
+			drawString(10, 100, "IR get   Error: %x", GetIR);
 		}
 		
-		//if(frame != 0 && frame != 1) {
-		//	IRU_RecvData(buf, 0x1000, (u8)0x1, transfercount, 0x0);
-		//}
-		//drawString(10,110,"Buf: %x", &buf);
-		//drawString(10,120,"tra: %x", &transfercount);
-		//drawString(10,130,"mem: %x", &irmemloc);
+		
+		if(frame % 36 == 0) {
+			SetIR = IRU_SetIRLEDState(0x1);
+			drawString(10, 110, "IR state:*");
+		} else if(frame % 36 == 1) {
+			drawString(10, 110, "IR state:*");
+		} else if(frame % 36 == 2){
+			SetIR = IRU_SetIRLEDState(0x0);
+			drawString(10, 110, "IR state:");
+		} else {
+			drawString(10, 110, "IR state:");
+		}
+		
+		if(frame > 363) {
+			GetIR = irucmd_StartRecvTransfer(0x98, 0x0);
+		}
+		printMemory(irmemloc,0x1000,120); //might be dangerous?
 		
 		drawString(10, 220, "Start + Select to exit.");
 		
