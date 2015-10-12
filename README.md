@@ -5,6 +5,7 @@ A test for the Circle Pad Pro and other 3DS inputs.
 - Cubic Ninja(US)
 - Ocarina of Time 3D
 - Toki no Ocarina 3D (OoT 3D)
+- Dead or Alive Dimensions
 
 Please make sure you have CPPTest.xml in the same directory as CPPTest.3dsx. In order to select a target, use the D pad (left and right). Report findings at https://gbatemp.net/threads/infra-red-resource-thread.399336/.
 
