@@ -61,7 +61,7 @@ void printMemory(void *ptr, int size, int row) //This is probably very bad but w
 }
 
 int main(void) {
-	irmemloc = (u32*) malloc(0x1000);
+	irmemloc = (u32*) memalign(0x1000, 0x1000);
 	Startup = IRU_Initialize(irmemloc, 0x1000);
 	SetBit = IRU_SetBitRate(0x4);
 	srvInit();        // services
@@ -185,7 +185,7 @@ int main(void) {
 		}
 		
 		if(frame > 363) {
-			GetIR = irucmd_StartRecvTransfer(0x98, 0x0);
+			GetIR = irucmd_StartRecvTransfer(0x98, 0x1);
 		}
 		printMemory(irmemloc,0x1000,120); //might be dangerous?
 		
