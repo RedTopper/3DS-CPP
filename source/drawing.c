@@ -108,6 +108,8 @@ static const char fonts[] = { //Fonte 8x8 1BPP
 inline void clearScreen(void) {
 	u8 *frame = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
 	memset(frame, 0, 320 * 240 * 3);
+	frame = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+	memset(frame, 0, 400 * 240 * 3);
 }
 
 void drawPixelRGBFramebuffer(u8 *fb, int x, int y, u8 r, u8 g, u8 b) {

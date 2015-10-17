@@ -9,13 +9,16 @@
 
 static jmp_buf exitJmp;
 u32 *irmemloc;
-//u8 *buf;
-//u32 *transfercount;
-Result Startup;
-Result SetBit;
-Result SetIR;
-Result GetIR = 0xffffffff; //unknown until known...
+Result Startup = 0xffffffff; //error or not on start
+Result SetBit = 0xffffffff;	//error or not of setting the bit rate of the IR port
+Result SetIR = 0xffffffff;	//error or not of setting the IR led on or off
+Result GetIR = 0xffffffff; //error or not of getting bits from the IR port.
+Result GetStatus = 0xffffffff; //error or not of getting the transfer state of the IR port. 
+u8 StatusIR; //return of the status of IR.
 unsigned long frame = 0;
+u8 flag = 0; //flag for ir get.
+u8 *bot;
+u8 *top;
 
 
 void hang(char *message) {
@@ -23,8 +26,8 @@ void hang(char *message) {
 		hidScanInput();
 		
 		clearScreen();
-		drawString(10, 10, "%s", message);
-		drawString(10, 20, "Start and Select to exit");
+		drawString(top, 10, 10, "%s", message);
+		drawString(top, 10, 20, "Start and Select to exit");
 		
 		u32 kHeld = hidKeysHeld();
 		if((kHeld & KEY_START) && (kHeld & KEY_SELECT)) longjmp(exitJmp, 1);
@@ -33,6 +36,21 @@ void hang(char *message) {
 		gspWaitForVBlank();
 		gfxSwapBuffers();
 	}
+}
+
+Result irucmd_GetTransferState(u8 *state)
+{
+	Result ret = 0;
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = 0x000F0000;
+
+	if((ret = svcSendSyncRequest(IRU_GetServHandle()))!=0)return ret;
+	ret = (Result)cmdbuf[1];
+	
+	*state = cmdbuf[2];
+
+	return ret;
 }
 
 void printMemory(void *ptr, int size, int row) //This is probably very bad but whatever
@@ -45,7 +63,7 @@ void printMemory(void *ptr, int size, int row) //This is probably very bad but w
     while(i  != size){
 		int mem = (int)c[i];
         if(mem != 0) {
-			drawString(10 + (col*18), row + (rowu * 10), "%02x ", mem); 
+			drawString(bot, 10 + (col*18), row + (rowu * 10), "%02x ", mem); 
 			if(col>15) {
 				col = -1;
 				rowu++;
@@ -56,7 +74,7 @@ void printMemory(void *ptr, int size, int row) //This is probably very bad but w
 		i++;
 	}  
 	if(memed == 0) {
-		drawString(10, row, "Nothing to show in memory."); 
+		drawString(bot, 10, row, "Nothing to show in memory."); 
 	}
 }
 
@@ -71,6 +89,8 @@ int main(void) {
 	
 	gfxSetDoubleBuffering(GFX_TOP, true);
 	gfxSetDoubleBuffering(GFX_BOTTOM, true);
+	bot = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+	top = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 	
 	if(setjmp(exitJmp)) goto exit;
 	
@@ -79,6 +99,8 @@ int main(void) {
 	gfxSwapBuffers();
 	
 	while(aptMainLoop()) {
+		bot = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+		top = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 		hidScanInput();
 		irrstScanInput();
 		
@@ -144,52 +166,62 @@ int main(void) {
 			keys[20] = '*';
 			keys[21] = '*';
 		}
-		drawString(10, 10, keys);
-		drawString(10, 20, "Volume: %d", vol8);
-		drawString(10, 30, "Circle Pad   x: %04+d, y: %04+d", circlePad.dx, circlePad.dy);
-		drawString(10, 40, "CStick (new) x: %04+d, y: %04+d", cStick.dx, cStick.dy );
-		drawString(10, 50, "CPadPr (old) x: NaN , y: NaN", cStick.dx, cStick.dy );
-		drawString(10, 60, "Touch        x: %04d, y: %04d", touch.px, touch.py );
+		drawString(top, 10, 10, keys);
+		drawString(top, 10, 20, "Volume: %d", vol8);
+		drawString(top, 10, 30, "Circle Pad   x: %04+d, y: %04+d", circlePad.dx, circlePad.dy);
+		drawString(top, 10, 40, "CStick (new) x: %04+d, y: %04+d", cStick.dx, cStick.dy );
+		drawString(top, 10, 50, "CPadPr (old) x: NaN , y: NaN", cStick.dx, cStick.dy );
+		drawString(top, 10, 60, "Touch        x: %04d, y: %04d", touch.px, touch.py );
 		if(Startup == 0) {
-			drawString(10, 70, "IR started!");
+			drawString(top, 10, 70, "IR started!");
 		} else {
-			drawString(10, 70, "IR Init  Error: %x", Startup);
+			drawString(top, 10, 70, "IR Init  Error: %x", Startup);
 		}
 		if(SetIR == 0) {
-			drawString(10, 80, "IR on/off works!");
+			drawString(top, 10, 80, "IR on/off works!");
 		} else {
-			drawString(10, 80, "IR I/O   Error: %x", SetIR);
+			drawString(top, 10, 80, "IR I/O   Error: %x", SetIR);
 		}
 		if(SetBit == 0) {
-			drawString(10, 90, "IR bit rate works!");
+			drawString(top, 10, 90, "IR bit rate works!");
 		} else {
-			drawString(10, 90, "IR Bit   Error: %x", SetBit);
+			drawString(top, 10, 90, "IR Bit   Error: %x", SetBit);
 		}
 		if(GetIR == 0) {
-			drawString(10, 100, "IR get works :P!");
+			drawString(top, 10, 100, "IR get works!");
 		} else {
-			drawString(10, 100, "IR get   Error: %x", GetIR);
+			drawString(top, 10, 100, "IR get   Error: %x", GetIR);
 		}
+		if(GetStatus == 0) {
+			drawString(top, 10, 110, "IR status works!");
+		} else {
+			drawString(top, 10, 110, "IR stat  Error: %x", GetStatus);
+		}
+		drawString(top, 10, 120, "IR mode: %x", StatusIR);
 		
 		
 		if(frame % 36 == 0) {
 			SetIR = IRU_SetIRLEDState(0x1);
-			drawString(10, 110, "IR state:*");
+			drawString(top, 10, 130, "IR state:*");
 		} else if(frame % 36 == 1) {
-			drawString(10, 110, "IR state:*");
-		} else if(frame % 36 == 2){
 			SetIR = IRU_SetIRLEDState(0x0);
-			drawString(10, 110, "IR state:");
+			if(frame == 1) {
+				GetIR = irucmd_StartRecvTransfer(0x100, 0x0);
+			} else {
+				GetStatus = irucmd_GetTransferState(&StatusIR);
+				if(StatusIR == 1) {
+					flag++;
+					GetIR = irucmd_StartRecvTransfer(0x100, flag);
+				}
+			}
+			drawString(top, 10, 130, "IR state:");
 		} else {
-			drawString(10, 110, "IR state:");
+			drawString(top, 10, 130, "IR state:");
 		}
+
+		printMemory(irmemloc,0x1000,10); //might be dangerous?
 		
-		if(frame > 363) {
-			GetIR = irucmd_StartRecvTransfer(0x98, 0x1);
-		}
-		printMemory(irmemloc,0x1000,120); //might be dangerous?
-		
-		drawString(10, 220, "Start + Select to exit.");
+		drawString(top, 10, 220, "Start + Select to exit.");
 		
 		if((kHeld & KEY_START) && (kHeld & KEY_SELECT)) longjmp(exitJmp, 1);
 		
@@ -201,6 +233,7 @@ int main(void) {
 	
 	exit:
 	
+//	irucmd_WaitRecvTransfer(transfercount);
 	IRU_Shutdown();
 	free(irmemloc);
 	gfxExit();

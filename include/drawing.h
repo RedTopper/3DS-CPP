@@ -16,7 +16,7 @@ void drawPixelRGBFramebuffer(u8 *fb, int x, int y, u8 r, u8 g, u8 b);
 #define drawBox(x, y, width, height, r, g, b) drawBoxFramebuffer(0, x, y, width, height, r, g, b)
 inline void drawBoxFramebuffer(u8 *fb, int x, int y, int width, int height, u8 r, u8 g, u8 b);
 
-#define drawString(sx, sy, text, ...) drawStringFramebuffer(0, sx, sy, text, ##__VA_ARGS__)
+#define drawString(fb, sx, sy, text, ...) drawStringFramebuffer(fb, sx, sy, text, ##__VA_ARGS__)
 void drawStringFramebuffer(u8 *fb, int sx, int sy, char *text, ...);
 
 void disableBacklight();
